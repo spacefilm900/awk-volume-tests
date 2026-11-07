@@ -1,0 +1,20 @@
+{
+  "url": "https://www.gutenberg.org/cache/epub/100/pg100.txt",
+  "download_bytes": 5638481,
+  "download_sha256": "eb61e33cab23dbe712ad57091ded6c7292ba91ac3bb2764f51a3223ec0068fe5",
+  "crlf_pairs_normalised_in_body": 196398,
+  "start_marker": "*** START OF THE PROJECT GUTENBERG EBOOK THE COMPLETE WORKS OF WILLIAM SHAKESPEARE ***",
+  "end_marker": "*** END OF THE PROJECT GUTENBERG EBOOK THE COMPLETE WORKS OF WILLIAM SHAKESPEARE ***",
+  "files": {
+    "shakespeare_body.txt": {
+      "bytes": 5422627,
+      "sha256": "a6209a86eb3de42530f24feaf317e94d43ea18d71ccb64a8cf5e54a368db23f2",
+      "wc": "196022  963460 5422627 /workspace/volume-test/shakespeare_body.txt"
+    },
+    "shakespeare_reversed.txt": {
+      "bytes": 5403157,
+      "sha256": "e1c76205e4ef19d7f7c2ab44d734bbb21423ba41c64ead4efe5ae9c698a3d6ac",
+      "wc": "196022  963460 5403157 /workspace/volume-test/shakespeare_reversed.txt"
+    }
+  }
+}

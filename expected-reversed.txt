@@ -1,0 +1,29 @@
+Characters: 5403157
+Words: 963460
+Lines: 196022
+Unique words: 24458
+Most common words:
+the 30396
+and 28507
+i 24201
+to 21095
+of 18756
+a 16490
+you 14654
+my 13204
+in 12530
+that 12272
+Least common words:
+abaissiez 1
+abandoner 1
+abash 1
+abatements 1
+abates 1
+abbeys 1
+abbots 1
+abbreviated 1
+abc 1
+abet 1
+Lowest frequency: 1
+Words at lowest frequency: 8790
+8790 words occur only once; first 10 alphabetically shown
