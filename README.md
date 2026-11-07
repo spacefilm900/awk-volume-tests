@@ -1,0 +1,183 @@
+# awk volume tests: the complete works of Shakespeare
+
+This is a volume test for awk interpreters. One portable POSIX awk program,
+`volume.awk`, reads the whole of Shakespeare (about 5.4 MB, 196,022 lines and
+963,460 words). It prints:
+
+- character, word and line totals;
+- the number of distinct words;
+- the ten most and ten least common words;
+- how many words occur only once.
+
+Every interpreter must produce exactly the expected output, byte for byte. The
+test also records how long each one takes.
+
+It was written to check two new awk implementations, [pyawk](https://github.com/spacefilm900/pyawk)
+(Python) and [hawk](https://github.com/spacefilm900/hawk) (Rust), against established
+awks. These are mawk, GNU awk (gawk, also with `--posix`), the One True AWK
+(onetrue-awk, the BWK awk) and BusyBox awk.
+
+## How to run it
+
+```sh
+./fetch.sh   # download Gutenberg #100 and build data/ (checks every sha256)
+./run.sh     # run every available awk on both inputs and print the table
+```
+
+**Requirements:** bash, curl, sed, sha256sum, python3 and coreutils.
+
+- `run.sh` skips any interpreter that is not installed.
+- It exits with status 1 if any interpreter that ran gives a wrong result or
+  fails, and 2 if none could run.
+
+**Choosing interpreters.** Set `AWKS` to the names to run:
+
+`pyawk hawk mawk gawk gawk-posix onetrue busybox`
+
+**Changing a command.** Override it with its variable:
+
+```sh
+AWKS="mawk hawk" HAWK_CMD=$HOME/src/hawk/target/release/hawk ./run.sh
+```
+
+The variables are `PYAWK_CMD` (or just `PYAWK_DIR`), `HAWK_CMD`, `MAWK_CMD`,
+`GAWK_CMD`, `GAWK_POSIX_CMD`, `ONETRUE_CMD` and `BUSYBOX_CMD`. `RUNS` sets the
+number of timed runs; the default is 3.
+
+The defaults are the paths on the machine where these tests were developed:
+
+| Name | Default command |
+|---|---|
+| pyawk | `env PYTHONPATH=/workspace/pyawk python3 -m pyawk` |
+| hawk | `/workspace/hawk/target/release/hawk` |
+| mawk | `mawk` |
+| gawk | `/workspace/refs/local/bin/gawk` |
+| gawk-posix | `$GAWK_CMD --posix` |
+| onetrue | `/workspace/refs/onetrue-awk/a.out` |
+| busybox | `busybox awk`, or `/workspace/refs/busybox/busybox awk` |
+
+## The input
+
+- **Source:** Project Gutenberg ebook #100, *The Complete Works of William
+  Shakespeare*, from `https://www.gutenberg.org/cache/epub/100/pg100.txt`. It
+  includes the sonnets and poems, not only the plays.
+- **Not redistributed.** The text is in the public domain and is not stored in
+  this repository. `fetch.sh` downloads it into `data/`, which git ignores.
+
+`fetch.sh` builds the inputs in these steps:
+
+1. Check the download's sha256 against the pinned value in `fetch.sh` and
+   `source.json`.
+2. Convert CRLF line endings to LF.
+3. Keep only the lines strictly between the `*** START OF THE PROJECT GUTENBERG
+   EBOOK …` and `*** END OF …` marker lines. This gives
+   `data/shakespeare_body.txt`.
+4. Run `reverse.py` to make `data/shakespeare_reversed.txt`. The lines are in
+   reverse order, and so are the words within each line, rejoined with single
+   spaces. It holds the same words in reverse order, so every count except the
+   byte total is the same.
+5. Check both files against pinned sha256s.
+
+| File | Bytes | sha256 |
+|---|---:|---|
+| `pg100.txt` (download) | 5,638,481 | `eb61e33cab23dbe712ad57091ded6c7292ba91ac3bb2764f51a3223ec0068fe5` |
+| `shakespeare_body.txt` | 5,422,627 | `a6209a86eb3de42530f24feaf317e94d43ea18d71ccb64a8cf5e54a368db23f2` |
+| `shakespeare_reversed.txt` | 5,403,157 | `e1c76205e4ef19d7f7c2ab44d734bbb21423ba41c64ead4efe5ae9c698a3d6ac` |
+
+### If the download changes
+
+Project Gutenberg sometimes updates its files. If the sha256 no longer matches,
+`fetch.sh` stops and builds nothing, because the expected outputs would no
+longer apply. To move to a new version:
+
+1. Recompute the expected outputs independently, for example in Python, as was
+   done for the original run (see `reports/2026-11-07.md`).
+2. Update the pinned hashes, `source.json`, `expected.txt` and
+   `expected-reversed.txt` together.
+
+## What is counted
+
+- **Characters** = the sum of `length($0) + 1` over all lines, where the `+ 1`
+  is each line's newline. Under `LC_ALL=C`, which `run.sh` always sets, this is
+  the number of bytes.
+- **Words** = the sum of `NF`. These are whitespace-separated words, with
+  punctuation kept, the same as `wc -w` in the C locale.
+- **Lines** = the number of records.
+- **Frequency words** are counted separately:
+  - they are the longest runs of ASCII letters and apostrophes (`'`), in lower
+    case;
+  - leading and trailing apostrophes are removed, and empty results are dropped;
+  - curly apostrophes and non-ASCII letters separate words, deliberately, so the
+    result is the same in every awk;
+  - ties are broken alphabetically.
+- **Sorting.** The top and bottom ten lists are kept sorted by insertion while
+  the program walks the vocabulary. No awk-specific sort function is used, and
+  the cost stays linear.
+
+**Expected outputs.** `expected.txt` is for the body and
+`expected-reversed.txt` is for the reversed file. They are identical except
+for the first line:
+
+- the body has `Characters: 5422627`;
+- the reversed file has `Characters: 5403157`, because reversing collapses
+  repeated spaces.
+
+These outputs were computed independently in Python and also match
+`LC_ALL=C POSIXLY_CORRECT=1 wc -lwc`.
+
+## Notes
+
+- **GNU wc counts two extra words unless `POSIXLY_CORRECT` is set.** Under
+  `LC_ALL=C`, GNU `wc -w` reports 963,462 words, not 963,460.
+  - Without `POSIXLY_CORRECT`, it treats byte 0xA0 as a space, even inside the
+    UTF-8 encoding of `à`.
+  - The two affected lines are `Armed at point exactly, cap-à-pie,` and
+    `_Qui vous là?_`.
+  - Example: `printf 'a\303\240b\n' | LC_ALL=C wc -w` prints 2, and with
+    `POSIXLY_CORRECT=1` it prints 1.
+
+  This is a quirk of wc, not of any awk.
+- **mawk and BusyBox count bytes even under UTF-8.** In a UTF-8 locale,
+  multibyte-aware awks (pyawk, hawk, gawk and onetrue-awk) count characters
+  with `length`, giving 5,359,350 for the body. mawk 1.3.4 and BusyBox awk
+  1.35.0 still count bytes (5,422,627). All the other results are the same.
+  That is why the test runs under `LC_ALL=C`, where every awk counts bytes. The
+  UTF-8 figures are in `reports/2026-11-07.md`.
+- **Timings are approximate.** They are wall-clock seconds, the best of 3 runs,
+  including start-up, on a shared machine. Treat them as a rough comparison, not
+  a benchmark.
+
+## Results, 7 November 2026
+
+These come from a fresh clone of this repository: `./fetch.sh` then `./run.sh`.
+The machine was Debian GNU/Linux 13 (x86_64, 8 virtual CPUs, Intel Xeon).
+
+| awk | body | seconds | reversed | seconds |
+|---|---|---:|---|---:|
+| pyawk | PASS | 4.752 | PASS | 4.496 |
+| hawk | PASS | 1.579 | PASS | 1.503 |
+| mawk | PASS | 0.247 | PASS | 0.239 |
+| gawk | PASS | 0.927 | PASS | 0.883 |
+| gawk --posix | PASS | 0.939 | PASS | 0.937 |
+| onetrue | PASS | 1.103 | PASS | 1.076 |
+| busybox | PASS | 3.937 | PASS | 3.125 |
+
+| awk | Version used |
+|---|---|
+| pyawk | 1.1.0, `enhancements` branch at `b6a3d257d6fe09ecb15e3e383b5f56c78bb7c5cc`, Python 3.13.5 |
+| hawk | 1.2.0, `enhancements` branch at `9f09764a48053a98e0e1953731f8f089859928dd`, `cargo build --release` with rustc 1.99.1, binary sha256 `8eaaf2427d2622c11f9b4a568bd4e3e1917cb40012a4e63dd7643fb55fba1a19` |
+| mawk | 1.3.4 20250131 (Debian package 1.3.4.20250131-1) |
+| gawk | GNU Awk 5.4.1 |
+| onetrue | One True AWK 20260426 (git `5739fd7`) |
+| busybox | BusyBox v1.35.0 (static build) |
+
+The original verified run used pyawk `5ad9d48` and the hawk 1.2 binary built
+from `d24f8d1`, and also measured the UTF-8 locale. It is kept unchanged in
+[`reports/2026-11-07.md`](reports/2026-11-07.md). Its paths refer to the
+working directory used at the time.
+
+## Licence
+
+MIT, copyright (c) 2026 Keith Haviland; see `LICENSE`. The Shakespeare text is
+in the public domain, comes from Project Gutenberg and is not redistributed
+here.
