@@ -18,6 +18,8 @@ END='*** END OF THE PROJECT GUTENBERG EBOOK THE COMPLETE WORKS OF WILLIAM SHAKES
 
 mkdir -p data
 raw=data/pg100.txt
+# Remove old derived files first, so a failed run never leaves stale inputs.
+rm -f data/shakespeare_body.txt data/shakespeare_reversed.txt
 
 check() { # check FILE EXPECTED-SHA256 WHAT
     local got
