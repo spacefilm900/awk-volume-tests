@@ -15,17 +15,24 @@ cd "$(dirname "$0")"
 export LC_ALL=C   # length() counts bytes; see README.md
 unset LANG LC_CTYPE
 
-PYAWK_DIR=${PYAWK_DIR:-/workspace/pyawk}
-PYAWK_CMD=${PYAWK_CMD:-env PYTHONPATH=$PYAWK_DIR python3 -m pyawk}
-HAWK_CMD=${HAWK_CMD:-/workspace/hawk/target/release/hawk}
-MAWK_CMD=${MAWK_CMD:-mawk}
-GAWK_CMD=${GAWK_CMD:-/workspace/refs/local/bin/gawk}
-GAWK_POSIX_CMD=${GAWK_POSIX_CMD:-$GAWK_CMD --posix}
-ONETRUE_CMD=${ONETRUE_CMD:-/workspace/refs/onetrue-awk/a.out}
-if [[ -z "${BUSYBOX_CMD:-}" ]]; then
-    if command -v busybox >/dev/null; then BUSYBOX_CMD="busybox awk"
-    else BUSYBOX_CMD="/workspace/refs/busybox/busybox awk"; fi
+# Defaults: each interpreter is looked up on PATH under its usual name.
+first_on_path() {   # print the first of the given names found on PATH
+    local n
+    for n in "$@"; do
+        if command -v "$n" >/dev/null 2>&1; then echo "$n"; return 0; fi
+    done
+    echo "$1"
+}
+if [[ -z "${PYAWK_CMD:-}" ]]; then
+    if [[ -n "${PYAWK_DIR:-}" ]]; then PYAWK_CMD="env PYTHONPATH=$PYAWK_DIR python3 -m pyawk"
+    else PYAWK_CMD=pyawk; fi
 fi
+HAWK_CMD=${HAWK_CMD:-hawk}
+MAWK_CMD=${MAWK_CMD:-mawk}
+GAWK_CMD=${GAWK_CMD:-gawk}
+GAWK_POSIX_CMD=${GAWK_POSIX_CMD:-$GAWK_CMD --posix}
+ONETRUE_CMD=${ONETRUE_CMD:-$(first_on_path original-awk onetrue-awk bwk-awk nawk)}
+BUSYBOX_CMD=${BUSYBOX_CMD:-busybox awk}
 AWKS=${AWKS:-pyawk hawk mawk gawk gawk-posix onetrue busybox}
 RUNS=${RUNS:-3}
 

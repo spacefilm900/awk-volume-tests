@@ -44,17 +44,17 @@ The variables are `PYAWK_CMD` (or just `PYAWK_DIR`), `HAWK_CMD`, `MAWK_CMD`,
 `GAWK_CMD`, `GAWK_POSIX_CMD`, `ONETRUE_CMD` and `BUSYBOX_CMD`. `RUNS` sets the
 number of timed runs; the default is 3.
 
-The defaults are the paths on the machine where these tests were developed:
+By default each interpreter is looked up on `PATH` under its usual name:
 
 | Name | Default command |
 |---|---|
-| pyawk | `env PYTHONPATH=/workspace/pyawk python3 -m pyawk` |
-| hawk | `/workspace/hawk/target/release/hawk` |
+| pyawk | `pyawk` (the installed launcher), or `env PYTHONPATH=$PYAWK_DIR python3 -m pyawk` when `PYAWK_DIR` is set |
+| hawk | `hawk` |
 | mawk | `mawk` |
-| gawk | `/workspace/refs/local/bin/gawk` |
+| gawk | `gawk` |
 | gawk-posix | `$GAWK_CMD --posix` |
-| onetrue | `/workspace/refs/onetrue-awk/a.out` |
-| busybox | `busybox awk`, or `/workspace/refs/busybox/busybox awk` |
+| onetrue | the first of `original-awk`, `onetrue-awk`, `bwk-awk` or `nawk` on `PATH` |
+| busybox | `busybox awk` |
 
 ## The input
 
